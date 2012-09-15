@@ -4,23 +4,19 @@ import (
 	"os"
 	"fmt"
 	"unsafe"
-	// "strings"
+	"strings"
 )
+
 
 const MAX_NAME_SIZE = 256
 
-// input.h ioctls
+// ioctls
 var EVIOCGID   = _IOR('E', 0x02, 8)  // 8 <- sizeof(struct input_id)
 var EVIOCGNAME = _IOC(_IOC_READ, 'E', 0x06, MAX_NAME_SIZE)
 var EVIOCGPHYS = _IOC(_IOC_READ, 'E', 0x07, MAX_NAME_SIZE)
 
 func EVIOCGBIT(ev, len int) int {
 	return _IOC(_IOC_READ, 'E', 0x20 + ev, len)
-}
-
-
-type device_info struct {
-	bustype, vendor, product, version uint16
 }
 
 type InputDevice struct {
@@ -54,6 +50,10 @@ func Open(devnode string) *InputDevice {
 	return &dev
 }
 
+type device_info struct {
+	bustype, vendor, product, version uint16
+}
+
 func (dev *InputDevice) get_device_info() {
 	info := device_info{}
 
@@ -76,7 +76,7 @@ func (dev *InputDevice) get_device_info() {
 }
 
 func keys (cap *map[int][]int) []int {
-	slice := make([]int, len(*cap))
+	slice := make([]int, 0)
 
 	for key := range *cap {
 		slice = append(slice, key)
@@ -86,14 +86,14 @@ func keys (cap *map[int][]int) []int {
 }
 
 func (dev *InputDevice) String() string {
-	evtypes := keys(&dev.Capabilities)
-	evtypes_str := make([]string, len(evtypes))
+	capkeys := keys(&dev.Capabilities)
+	evtypes := make([]string, 0)
 
-	for k := range evtypes {
-		evtypes_str = append(evtypes_str, fmt.Sprintf("%s %d", EV[k], k))
-		fmt.Println(evtypes_str[0])
+	for k := range capkeys {
+		ev := capkeys[k]
+		evtypes = append(evtypes, fmt.Sprintf("%s %d", EV[ev], ev))
 	}
-	// evtypes_str = strings.Join(evtypes_str, ", ")
+	evtypes_s := strings.Join(evtypes, ", ")
 
 	return fmt.Sprintf(
 		"InputDevice %s (fd %d)\n" +
@@ -102,7 +102,7 @@ func (dev *InputDevice) String() string {
 		"  bus 0x%x, vendor 0x%x, product 0x%x, version 0x%x\n" +
 		"  events %s",
 		dev.Fn, dev.Fd, dev.Name, dev.Phys, dev.Bustype,
-		dev.Vendor, dev.Product, dev.Version, evtypes_str)
+		dev.Vendor, dev.Product, dev.Version, evtypes_s)
 }
 
 func (dev *InputDevice) get_device_capabilities() {
@@ -115,7 +115,6 @@ func (dev *InputDevice) get_device_capabilities() {
 
 	for evtype := 0; evtype < EV_MAX; evtype++ {
 		if evbits[evtype/8] & (1 << uint(evtype % 8)) != 0 {
-
 			eventcodes := make([]int, 0)
 
 			ioctl(dev.Fd, EVIOCGBIT(evtype, KEY_MAX), unsafe.Pointer(codebits))
@@ -130,4 +129,4 @@ func (dev *InputDevice) get_device_capabilities() {
 	}
 
 	dev.Capabilities = capabilities
-u
+}
