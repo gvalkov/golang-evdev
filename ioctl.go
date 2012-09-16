@@ -22,7 +22,8 @@ const (
 )
 
 func _IOC(dir int, t int, nr int, size int) int {
-    return (dir << _IOC_DIRSHIFT) | (t << _IOC_TYPESHIFT) | (nr << _IOC_NRSHIFT) | (size << _IOC_SIZESHIFT)
+	return  (dir << _IOC_DIRSHIFT) |    (t << _IOC_TYPESHIFT) |
+		     (nr << _IOC_NRSHIFT)  | (size << _IOC_SIZESHIFT)
 }
 
 func _IOR(t int, nr int, size int) int {
@@ -32,4 +33,14 @@ func _IOR(t int, nr int, size int) int {
 func ioctl(fd uintptr, name int, data unsafe.Pointer) syscall.Errno {
 	_, _, err := syscall.RawSyscall(syscall.SYS_IOCTL, fd, uintptr(name), uintptr(data))
 	return err
+}
+
+
+// input.h ioctls
+var EVIOCGID   = _IOR('E', 0x02, 8)  // 8 <- sizeof(struct input_id)
+var EVIOCGNAME = _IOC(_IOC_READ, 'E', 0x06, MAX_NAME_SIZE)
+var EVIOCGPHYS = _IOC(_IOC_READ, 'E', 0x07, MAX_NAME_SIZE)
+
+func EVIOCGBIT(ev, len int) int {
+	return _IOC(_IOC_READ, 'E', 0x20 + ev, len)
 }

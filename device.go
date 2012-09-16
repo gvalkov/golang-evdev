@@ -7,30 +7,23 @@ import (
 	"strings"
 )
 
-
 const MAX_NAME_SIZE = 256
 
-// ioctls
-var EVIOCGID   = _IOR('E', 0x02, 8)  // 8 <- sizeof(struct input_id)
-var EVIOCGNAME = _IOC(_IOC_READ, 'E', 0x06, MAX_NAME_SIZE)
-var EVIOCGPHYS = _IOC(_IOC_READ, 'E', 0x07, MAX_NAME_SIZE)
-
-func EVIOCGBIT(ev, len int) int {
-	return _IOC(_IOC_READ, 'E', 0x20 + ev, len)
-}
-
+// An InputDevice is a Linux input device from which events can be
+// read.
 type InputDevice struct {
-	Fn   string
-	Name string
-	Phys string
-	Fd   uintptr
+	Fn   string      // path to input device (devnode)
 
-	Bustype uint16
-	Vendor  uint16
-	Product uint16
-	Version uint16
+	Name string      // device name
+	Phys string      // physical topology of device
+	Fd   uintptr     // a non-blocking file descriptor to the device file
 
-	Capabilities map[int][]int
+	Bustype uint16   // bustype identifier
+	Vendor  uint16   // vendor identifier
+	Product uint16   // product identifier
+	Version uint16   // version identifier
+
+	Capabilities map[int][]int  // supported event types and codes
 }
 
 func Open(devnode string) *InputDevice {
@@ -48,41 +41,6 @@ func Open(devnode string) *InputDevice {
 	dev.get_device_capabilities()
 
 	return &dev
-}
-
-type device_info struct {
-	bustype, vendor, product, version uint16
-}
-
-func (dev *InputDevice) get_device_info() {
-	info := device_info{}
-
-	name := new([MAX_NAME_SIZE]byte)
-	phys := new([MAX_NAME_SIZE]byte)
-
-	// fmt.Println("size", unsafe.Sizeof(info))
-
-	ioctl(dev.Fd, EVIOCGID, unsafe.Pointer(&info))
-	ioctl(dev.Fd, EVIOCGNAME, unsafe.Pointer(name))
-	ioctl(dev.Fd, EVIOCGPHYS, unsafe.Pointer(phys))
-
-	dev.Name = string(name[:])
-	dev.Phys = string(phys[:])
-
-	dev.Vendor  = info.vendor
-	dev.Bustype = info.bustype
-	dev.Product = info.product
-	dev.Version = info.version
-}
-
-func keys (cap *map[int][]int) []int {
-	slice := make([]int, 0)
-
-	for key := range *cap {
-		slice = append(slice, key)
-	}
-
-	return slice
 }
 
 func (dev *InputDevice) String() string {
@@ -105,6 +63,7 @@ func (dev *InputDevice) String() string {
 		dev.Vendor, dev.Product, dev.Version, evtypes_s)
 }
 
+// Gets the event types and event codes that the input device supports
 func (dev *InputDevice) get_device_capabilities() {
 	capabilities := make(map[int][]int)
 
@@ -129,4 +88,42 @@ func (dev *InputDevice) get_device_capabilities() {
 	}
 
 	dev.Capabilities = capabilities
+}
+
+// An all-in-one function for describing an input device
+func (dev *InputDevice) get_device_info() {
+	info := device_info{}
+
+	name := new([MAX_NAME_SIZE]byte)
+	phys := new([MAX_NAME_SIZE]byte)
+
+	// fmt.Println("size", unsafe.Sizeof(info))
+
+	ioctl(dev.Fd, EVIOCGID, unsafe.Pointer(&info))
+	ioctl(dev.Fd, EVIOCGNAME, unsafe.Pointer(name))
+	ioctl(dev.Fd, EVIOCGPHYS, unsafe.Pointer(phys))
+
+	dev.Name = string(name[:])
+	dev.Phys = string(phys[:])
+
+	dev.Vendor  = info.vendor
+	dev.Bustype = info.bustype
+	dev.Product = info.product
+	dev.Version = info.version
+}
+
+// Corresponds to the input_id struct
+type device_info struct {
+	bustype, vendor, product, version uint16
+}
+
+
+func keys (cap *map[int][]int) []int {
+	slice := make([]int, 0)
+
+	for key := range *cap {
+		slice = append(slice, key)
+	}
+
+	return slice
 }
