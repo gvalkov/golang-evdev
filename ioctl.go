@@ -1,5 +1,6 @@
 package evdev
 
+// Bits and pieces from asm-generic/ioctl.h
 import (
 	"syscall"
 	"unsafe"
@@ -37,10 +38,10 @@ func ioctl(fd uintptr, name int, data unsafe.Pointer) syscall.Errno {
 
 
 // input.h ioctls
-var EVIOCGID   = _IOR('E', 0x02, 8)  // 8 <- sizeof(struct input_id)
-var EVIOCGNAME = _IOC(_IOC_READ, 'E', 0x06, MAX_NAME_SIZE)
-var EVIOCGPHYS = _IOC(_IOC_READ, 'E', 0x07, MAX_NAME_SIZE)
+var _EVIOCGID   = _IOR('E', 0x02, 8)  // 8 <- sizeof(struct input_id)
+var _EVIOCGNAME = _IOC(_IOC_READ, 'E', 0x06, _MAX_NAME_SIZE)
+var _EVIOCGPHYS = _IOC(_IOC_READ, 'E', 0x07, _MAX_NAME_SIZE)
 
-func EVIOCGBIT(ev, len int) int {
+func _EVIOCGBIT(ev, len int) int {
 	return _IOC(_IOC_READ, 'E', 0x20 + ev, len)
 }
