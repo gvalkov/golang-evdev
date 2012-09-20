@@ -14,13 +14,12 @@ package evdev
 import (
 	"os"
 	"fmt"
+	"bytes"
 	"unsafe"
 	"strings"
+	"path/filepath"
 	"encoding/binary"
-	"bytes"
 )
-
-const _MAX_NAME_SIZE = 256
 
 // A Linux input device from which events can be read.
 type InputDevice struct {
@@ -35,24 +34,24 @@ type InputDevice struct {
 	Product uint16   // product identifier
 	Version uint16   // version identifier
 
-	Capabilities map[CapabilityType][]CapabilityCode  // supported event types and codes.
+	Capabilities     map[CapabilityType][]CapabilityCode  // supported event types and codes.
+	CapabilitiesFlat map[int][]int
 }
 
-func Open(devnode string) *InputDevice {
-	file, err := os.Open(devnode)
-
+func Open(devnode string) (*InputDevice, error) {
+	f, err := os.Open(devnode)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	dev := InputDevice{}
 	dev.Fn = devnode
-	dev.File = file
+	dev.File = f
 
 	dev.set_device_info()
 	dev.set_device_capabilities()
 
-	return &dev
+	return &dev, nil
 }
 
 // Read and return a slice of input events from device.
@@ -96,43 +95,43 @@ func (dev *InputDevice) ReadOne() *InputEvent {
 //     bus 0x3, vendor 0x46d, product 0xc069, version 0x110
 //     events EV_KEY 1, EV_SYN 0, EV_REL 2, EV_MSC 4
 func (dev *InputDevice) String() string {
-	capkeys := keys(&dev.Capabilities)
 	evtypes := make([]string, 0)
 
-	for k := range capkeys {
-		ev := capkeys[k]
-		evtypes = append(evtypes, fmt.Sprintf("%s %d", EV[ev], ev))
+	for ev := range dev.Capabilities {
+		evtypes = append(evtypes, fmt.Sprintf("%s %d", ev.Name, ev.Type))
 	}
 	evtypes_s := strings.Join(evtypes, ", ")
 
 	return fmt.Sprintf(
-		"InputDevice %s (fd %d)\n" +
-		"  name %s\n" +
-		"  phys %s\n" +
-		"  bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x\n" +
-		"  events %s",
-		dev.Fn, dev.File.Fd(), dev.Name, dev.Phys, dev.Bustype,
-		dev.Vendor, dev.Product, dev.Version, evtypes_s)
+	       "InputDevice %s (fd %d)\n" +
+	       "  name %s\n" +
+	       "  phys %s\n" +
+	       "  bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x\n" +
+	       "  events %s",
+	       dev.Fn, dev.File.Fd(), dev.Name, dev.Phys, dev.Bustype,
+	       dev.Vendor, dev.Product, dev.Version, evtypes_s)
 }
 
 // Gets the event types and event codes that the input device supports
-func (dev *InputDevice) set_device_capabilities() {
-    // Capabilities is a map of supported event types to lists of
-    // events e.g: {1: [272, 273, 274, 275], 2: [0, 1, 6, 8]}
+func (dev *InputDevice) set_device_capabilities() error {
+	// Capabilities is a map of supported event types to lists of
+	// events e.g: {1: [272, 273, 274, 275], 2: [0, 1, 6, 8]}
 	// capabilities := make(map[int][]int)
 	capabilities := make(map[CapabilityType][]CapabilityCode)
 
 	evbits   := new([ (EV_MAX+1)/8]byte)
 	codebits := new([(KEY_MAX+1)/8]byte)
+	// absbits  := new([6]byte)
 
-	ioctl(dev.File.Fd(), _EVIOCGBIT(0, EV_MAX), unsafe.Pointer(evbits))
+	err := ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(0, EV_MAX)), unsafe.Pointer(evbits))
+	if err != 0 {return err}
 
     // Build a map of the device's capabilities
 	for evtype := 0; evtype < EV_MAX; evtype++ {
 		if evbits[evtype/8] & (1 << uint(evtype % 8)) != 0 {
 			eventcodes := make([]CapabilityCode, 0)
 
-			ioctl(dev.File.Fd(), _EVIOCGBIT(evtype, KEY_MAX), unsafe.Pointer(codebits))
+			ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(evtype, KEY_MAX)), unsafe.Pointer(codebits))
 			for evcode := 0; evcode < KEY_MAX; evcode++ {
 				if codebits[evcode/8] & (1 << uint(evcode % 8)) != 0 {
 					c := CapabilityCode{evcode, ByEventType[evtype][evcode]}
@@ -141,26 +140,31 @@ func (dev *InputDevice) set_device_capabilities() {
 			}
 
             // capabilities[EV_KEY] = [KEY_A, KEY_B, KEY_C, ...]
-			key = CapabilityType{evtype, EV[evtype]}
+			key := CapabilityType{evtype, EV[evtype]}
 			capabilities[key] = eventcodes
 		}
 	}
 
 	dev.Capabilities = capabilities
+	return nil
 }
 
-func (dev *InputDevice) resolve_capabilities
 
 // An all-in-one function for describing an input device
-func (dev *InputDevice) set_device_info() {
+func (dev *InputDevice) set_device_info() error {
 	info := device_info{}
 
-	name := new([_MAX_NAME_SIZE]byte)
-	phys := new([_MAX_NAME_SIZE]byte)
+	name := new([MAX_NAME_SIZE]byte)
+	phys := new([MAX_NAME_SIZE]byte)
 
-	ioctl(dev.File.Fd(), _EVIOCGID, unsafe.Pointer(&info))
-	ioctl(dev.File.Fd(), _EVIOCGNAME, unsafe.Pointer(name))
-	ioctl(dev.File.Fd(), _EVIOCGPHYS, unsafe.Pointer(phys))
+	err := ioctl(dev.File.Fd(), uintptr(EVIOCGID), unsafe.Pointer(&info))
+	if err != 0 { return err }
+
+	ioctl(dev.File.Fd(), uintptr(EVIOCGNAME), unsafe.Pointer(name))
+	if err != 0 { return err }
+
+	// it's ok if the topology info is not available
+	ioctl(dev.File.Fd(), uintptr(EVIOCGPHYS), unsafe.Pointer(phys))
 
 	dev.Name = string(name[:])
 	dev.Phys = string(phys[:])
@@ -169,16 +173,35 @@ func (dev *InputDevice) set_device_info() {
 	dev.Bustype = info.bustype
 	dev.Product = info.product
 	dev.Version = info.version
+
+	return nil
+}
+
+func (dev *InputDevice) GetRepeatRate() *[2]uint {
+	repeat_delay := new([2]uint)
+
+	ioctl(dev.File.Fd(), uintptr(EVIOCGREP), unsafe.Pointer(&repeat_delay))
+
+	return repeat_delay
 }
 
 type CapabilityType struct {
-	Type uint8
-	Type string
+	Type int
+	Name string
 }
 
 type CapabilityCode struct {
-	Code uint
+	Code int
 	Name string
+}
+
+type AbsInfo struct {
+	value int32
+	minimum int32
+	maximum int32
+	fuzz int32
+	flat int32
+	resolution int32
 }
 
 // Corresponds to the input_id struct
@@ -195,4 +218,36 @@ func keys (cap *map[int][]int) []int {
 	}
 
 	return slice
+}
+
+func IsInputDevice(path string) bool {
+	fi, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		return false
+	}
+
+	m := fi.Mode()
+	if m&os.ModeCharDevice == 0 {
+		return false
+	}
+
+	return true
+}
+
+func ListInputDevices() ([]string, error) {
+	paths, err := filepath.Glob("/dev/input/event*")
+
+	if err != nil {
+		return nil, err
+	}
+
+	devices := make([]string, 0)
+	for _, path := range paths {
+		if IsInputDevice(path) {
+			devices = append(devices, path)
+		}
+	}
+
+	return devices, nil
 }

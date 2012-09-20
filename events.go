@@ -1,9 +1,9 @@
 package evdev
 
 import (
-	"syscall"
 	"unsafe"
 	"fmt"
+	"syscall"
 )
 
 type InputEvent struct {
@@ -51,16 +51,52 @@ func (kev *KeyEvent) New(ev *InputEvent) {
 	}
 }
 
-func (kev *KeyEvent) String() string {
+func NewKeyEvent(ev *InputEvent) *KeyEvent {
+	kev := &KeyEvent{} ; kev.New(ev)
+	return kev
+}
+
+func (ev *KeyEvent) String() string {
 	state := "unknown"
 
-	switch kev.State {
+	switch ev.State {
 	case KeyUp: state = "up"
 	case KeyHold: state = "hold"
 	case KeyDown: state = "down"
 	}
 
 	return fmt.Sprintf("key event at %d.%d, %d (%d), ()",
-		               kev.Event.Time.Sec, kev.Event.Time.Usec,
-		               kev.Scancode, kev.Event.Code, state)
+		               ev.Event.Time.Sec, ev.Event.Time.Usec,
+		               ev.Scancode, ev.Event.Code, state)
+}
+
+
+// RelEvents are used to describe relative axis value changes,
+// e.g. moving the mouse 5 units to the left.
+type RelEvent struct {
+	Event *InputEvent
+}
+
+func (rev *RelEvent) New(ev *InputEvent) {
+	rev.Event = ev
+}
+
+func NewRelEvent(ev *InputEvent) *RelEvent {
+	rev := &RelEvent{} ; rev.New(ev)
+	return rev
+}
+
+func (ev *RelEvent) String() string {
+	return fmt.Sprintf("relative axis event at %d.%d, %s",
+	    ev.Event.Time.Sec, ev.Event.Time.Usec,
+	    REL[int(ev.Event.Code)])
+}
+
+// TODO: Make this work
+
+var EventFactory map[uint16]interface{} = make(map[uint16]interface{})
+
+func init() {
+	EventFactory[uint16(EV_KEY)] = NewKeyEvent
+	EventFactory[uint16(EV_REL)] = NewRelEvent
 }

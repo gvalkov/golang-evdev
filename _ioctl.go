@@ -38,9 +38,13 @@ func ioctl(fd uintptr, name int, data unsafe.Pointer) syscall.Errno {
 
 
 // input.h ioctls
-var _EVIOCGID   = _IOR('E', 0x02, 8)  // 8 <- sizeof(struct input_id)
+var _EVIOCGID   = _IOR('E', 0x02, SizeofInputId)  // 8 <- sizeof(struct input_id)
 var _EVIOCGNAME = _IOC(_IOC_READ, 'E', 0x06, _MAX_NAME_SIZE)
 var _EVIOCGPHYS = _IOC(_IOC_READ, 'E', 0x07, _MAX_NAME_SIZE)
+
+func _EVIOCGABS(ev int) int {
+	return _IOR('E', 0x40 + ev, 24)  // 24 <= sizeof(struct input_absinfo)
+}
 
 func _EVIOCGBIT(ev, len int) int {
 	return _IOC(_IOC_READ, 'E', 0x20 + ev, len)

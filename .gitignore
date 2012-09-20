@@ -4,3 +4,4 @@
 *.py[co]
 ecodes.go
 getioctl
+_obj
