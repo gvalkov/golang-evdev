@@ -2,6 +2,5 @@
 *.6
 *.out
 *.py[co]
-ecodes.go
 getioctl
 _obj

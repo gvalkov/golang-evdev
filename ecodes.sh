@@ -22,6 +22,7 @@ prefixes = 'KEY ABS REL SW MSC LED BTN REP SND ID EV BUS SYN'.split()
 codes = '''$(codes)'''.split('\n')
 
 ctx = {
+   'uname'   : '$(uname -s -r -v -m)',
    'codes'   : '\n'.join('    %s' % i for i in codes),
    'codemap' : '\n'.join('    \"%s\" : %s,' % (i,i) for i in (j.split()[0] for j in codes)),
 }

@@ -1,9 +1,9 @@
 // +build linux
 
-// Package evdev is an interface to the Linux input event system. The
-// evdev interface serves the purpose of passing events generated in
-// the kernel directly to userspace through character devices thata
-// are typically located in /dev/input/.
+// This package provides Go language bindings to the Linux input event
+// system. The evdev interface serves the purpose of passing events
+// generated in the kernel directly to userspace through character
+// devices thata are typically located in /dev/input/.
 //
 // This package also comes with bindings to uinput, the userspace
 // input subsystem. Uinput allows userspace programs to create and
@@ -12,13 +12,13 @@
 package evdev
 
 import (
-	"os"
-	"fmt"
 	"bytes"
-	"unsafe"
-	"strings"
-	"path/filepath"
 	"encoding/binary"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"unsafe"
 )
 
 // A Linux input device from which events can be read.
@@ -106,13 +106,13 @@ func (dev *InputDevice) String() string {
 	evtypes_s := strings.Join(evtypes, ", ")
 
 	return fmt.Sprintf(
-	       "InputDevice %s (fd %d)\n" +
-	       "  name %s\n" +
-	       "  phys %s\n" +
-	       "  bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x\n" +
-	       "  events %s",
-	       dev.Fn, dev.File.Fd(), dev.Name, dev.Phys, dev.Bustype,
-	       dev.Vendor, dev.Product, dev.Version, evtypes_s)
+		"InputDevice %s (fd %d)\n" +
+		"  name %s\n" +
+		"  phys %s\n" +
+		"  bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x\n" +
+		"  events %s",
+		dev.Fn, dev.File.Fd(), dev.Name, dev.Phys, dev.Bustype,
+		dev.Vendor, dev.Product, dev.Version, evtypes_s)
 }
 
 // Gets the event types and event codes that the input device supports.
@@ -161,10 +161,14 @@ func (dev *InputDevice) set_device_info() error {
 	phys := new([MAX_NAME_SIZE]byte)
 
 	err := ioctl(dev.File.Fd(), uintptr(EVIOCGID), unsafe.Pointer(&info))
-	if err != 0 { return err }
+	if err != 0 {
+		return err
+	}
 
 	ioctl(dev.File.Fd(), uintptr(EVIOCGNAME), unsafe.Pointer(name))
-	if err != 0 { return err }
+	if err != 0 {
+		return err
+	}
 
 	// it's ok if the topology info is not available
 	ioctl(dev.File.Fd(), uintptr(EVIOCGPHYS), unsafe.Pointer(phys))
@@ -213,11 +217,11 @@ type CapabilityCode struct {
 }
 
 type AbsInfo struct {
-	value int32
-	minimum int32
-	maximum int32
-	fuzz int32
-	flat int32
+	value      int32
+	minimum    int32
+	maximum    int32
+	fuzz       int32
+	flat       int32
 	resolution int32
 }
 
@@ -227,7 +231,7 @@ type device_info struct {
 }
 
 // Return the keys of a map as a slice (dict.keys())
-func keys (cap *map[int][]int) []int {
+func keys(cap *map[int][]int) []int {
 	slice := make([]int, 0)
 
 	for key := range *cap {
@@ -271,7 +275,7 @@ func ListInputDevices(deviceglob string) ([]string, error) {
 	return devices, nil
 }
 
-func bytes_to_string(b *[MAX_NAME_SIZE]byte) (string) {
+func bytes_to_string(b *[MAX_NAME_SIZE]byte) string {
 	idx := bytes.IndexByte(b[:], 0)
 	return string(b[:idx])
 }

@@ -9,6 +9,9 @@
 //   evdev.REL[0]  // "REL_X"
 //   evdev.EV[evdev.EV_KEY]  // "EV_KEY"
 //   evdev.ByEventType[EV_REL][0]  // "REL_X"
+//
+// Generated on: %(uname)s
+
 package evdev
 
 import "strings"
