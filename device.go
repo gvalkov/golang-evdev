@@ -166,8 +166,11 @@ func (dev *InputDevice) set_device_info() error {
 	// it's ok if the topology info is not available
 	ioctl(dev.File.Fd(), uintptr(EVIOCGPHYS), unsafe.Pointer(phys))
 
-	dev.Name = string(name[:])
-	dev.Phys = string(phys[:])
+	// dev.Name = string(name[:bytes.IndexByte(name[:], 0)])
+	// dev.Phys = string(phys[:bytes.IndexByte(phys[:], 0)])
+
+	dev.Name = bytes_to_string(name)
+	dev.Phys = bytes_to_string(phys)
 
 	dev.Vendor  = info.vendor
 	dev.Bustype = info.bustype
@@ -235,8 +238,9 @@ func IsInputDevice(path string) bool {
 	return true
 }
 
-func ListInputDevices() ([]string, error) {
-	paths, err := filepath.Glob("/dev/input/event*")
+// Return a list of accessible input devices matched by deviceglob
+func ListInputDevices(deviceglob string) ([]string, error) {
+	paths, err := filepath.Glob(deviceglob)
 
 	if err != nil {
 		return nil, err
@@ -250,4 +254,10 @@ func ListInputDevices() ([]string, error) {
 	}
 
 	return devices, nil
+}
+
+
+func bytes_to_string(b *[MAX_NAME_SIZE]byte) (string) {
+	idx := bytes.IndexByte(b[:], 0)
+	return string(b[:idx])
 }

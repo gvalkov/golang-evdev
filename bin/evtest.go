@@ -4,40 +4,110 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"errors"
+	"strings"
 	"evdev"
 )
 
 const (
 	usage = "usage: evtest <device> [<type> <value>]"
-	eventfmt = "time {:<16} type {} ({}), code {:<4} ({}), value {}"
-	device_dir = "/dev/input/"
+	eventfmt = "time %-16s type %s (%s), code %-4s (%s), value %s"
+	device_glob = "/dev/input/event*"
 )
-query_type = None
-query_value = None
 
-// Select a device from the list of accessible input devices
-func selectDevice() {
+func main() {
+	var dev *evdev.InputDevice
+	var err error
 
+	if len(os.Args) == 1 {
+		dev, err = select_device()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	} else if len(os.Args) == 2 {
+		fmt.Printf("Selecting Device 2\n")
+	} else if len(os.Args) == 4 {
+		fmt.Printf("Selecting Device 4\n")
+	} else {
+		fmt.Printf(usage + "\n")
+	}
+
+	info := fmt.Sprintf("bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x",
+		dev.Bustype, dev.Vendor, dev.Product, dev.Version)
+
+	fmt.Printf("Device name: %s\n", dev.Name)
+	fmt.Printf("Device info: %s\n", info)
+	fmt.Printf("Repeat settings: \n")
+	fmt.Printf("Device capabilities: \n")
+
+	fmt.Printf("Listening for events ...\n")
+
+	for {
+		fmt.Printf("asdfasd\n")
+	}
+
+// print('Listening for events ...\n')
+// while True:
+//     r, w, e = select([device], [], [])
+// 
+//     for ev in device.read():
+//         print_event(ev)
 }
 
 
-// def select_device():
-//     ''' Select a device from the  list of accessible input devices '''
+// Select a device from a list of accessible input devices.
+func select_device() (*evdev.InputDevice, error) {
+	fns, _ := evdev.ListInputDevices(device_glob)
+	devices := make([]*evdev.InputDevice, 0)
 
-//     devices = [InputDevice(i) for i in reversed(list_devices(device_dir))]
+	for i := range fns {
+		dev, err := evdev.Open(fns[i])
+		if err == nil {
+			devices = append(devices, dev)
+		}
+	}
 
-//     dev_fmt = '{0:<3} {1.fn:<20} {1.name:<35} {1.phys}'
-//     dev_lns = [dev_fmt.format(n, d) for n, d in enumerate(devices)]
+	lines := make([]string, 0)
+	max := 0
+	if len(devices) > 0 {
+		for i := range devices {
+			dev := devices[i]
+			str := fmt.Sprintf("%-3d %-20s %-35s %s", i, dev.Fn, dev.Name, dev.Phys)
+			if len(str) > max { max = len(str) }
+			lines = append(lines, str)
+		}
+		fmt.Printf("%-3s %-20s %-35s %s\n", "ID", "Device", "Name", "Phys")
+		fmt.Printf(strings.Repeat("-", max) + "\n")
+		fmt.Printf(strings.Join(lines, "\n")+"\n")
 
-//     print('ID  {:<20} {:<35} {}'.format('Device', 'Name', 'Phys'))
-//     print('-' * len(max(dev_lns, key=len)))
-//     print('\n'.join(dev_lns))
-//     print('')
+		var choice int
+		fmt.Printf("Select device [0-%d]: ", len(lines)-1)
+		fmt.Scanf("%d", &choice)
+		return devices[choice], nil
+	}
 
-//     choice = input('Select device [0-{}]:'.format(len(dev_lns)-1))
-//     return devices[int(choice)]
+	errmsg := fmt.Sprintf("no accessible input devices matched by %s", device_glob)
+	return nil, errors.New(errmsg)
+}
 
 
+func format_event(ev *evdev.InputEvent) string {
+	var res, f string
+	if ev.Type == evdev.EV_SYN {
+		if ev.Code == evdev.SYN_MT_REPORT {
+			f = "time %-16s +++++++++ %s ++++++++"
+		} else {
+			f = "time %-16s --------- %s --------"
+		}
+		res = fmt.Sprintf(f, ev.Time, evdev.SYN[int(ev.Code)])
+	} else {
+		res = "asdfasd"
+	}
+
+	return res
+}
 // def print_event(e):
 //     if e.type == ecodes.EV_SYN:
 //         if e.code == ecodes.SYN_MT_REPORT:
@@ -49,28 +119,14 @@ func selectDevice() {
 //             codename = ecodes.bytype[e.type][e.code]
 //         else:
 //             codename = '?'
-
+// 
 //         print(evfmt.format(e.timestamp(), e.type, ecodes.EV[e.type], e.code, codename, e.value))
-
-
-// if len(argv) == 1:
-//     device = select_device()
-
-// elif len(argv) == 2:
-//     device = InputDevice(argv[1])
-
-// elif len(argv) == 4:
-//     device = InputDevice(argv[1])
-//     query_type = argv[2]
-//     query_value = argv[3]
-// else:
-//     print(usage) ; exit(1)
-
-
+// 
+// 
 // print('Device name: {.name}'.format(device))
 // print('Device info: {.info}'.format(device))
 // print('Repeat settings: {}'.format(device.repeat))
-
+// 
 // print('Device capabilities:')
 // for type, codes in device.capabilities(verbose=True).items():
 //     print('  Type {} {}:'.format(*type))
@@ -81,11 +137,5 @@ func selectDevice() {
 //         else:
 //             print('    Code {:<4} {}'.format(*i))
 //     print('')
-
-
-// print('Listening for events ...\n')
-// while True:
-//     r, w, e = select([device], [], [])
-
-//     for ev in device.read():
-//         print_event(ev)
+// 
+// 
