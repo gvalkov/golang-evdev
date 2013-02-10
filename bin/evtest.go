@@ -3,15 +3,15 @@
 package main
 
 import (
+	"errors"
+	"evdev"
 	"fmt"
 	"os"
-	"errors"
 	"strings"
-	"evdev"
 )
 
 const (
-	usage = "usage: evtest <device> [<type> <value>]"
+	usage       = "usage: evtest <device> [<type> <value>]"
 	device_glob = "/dev/input/event*"
 )
 
@@ -33,17 +33,19 @@ func select_device() (*evdev.InputDevice, error) {
 		for i := range devices {
 			dev := devices[i]
 			str := fmt.Sprintf("%-3d %-20s %-35s %s", i, dev.Fn, dev.Name, dev.Phys)
-			if len(str) > max { max = len(str) }
+			if len(str) > max {
+				max = len(str)
+			}
 			lines = append(lines, str)
 		}
 		fmt.Printf("%-3s %-20s %-35s %s\n", "ID", "Device", "Name", "Phys")
 		fmt.Printf(strings.Repeat("-", max) + "\n")
-		fmt.Printf(strings.Join(lines, "\n")+"\n")
+		fmt.Printf(strings.Join(lines, "\n") + "\n")
 
 		var choice int
 		choice_max := len(lines) - 1
 
-		ReadChoice:
+	ReadChoice:
 		fmt.Printf("Select device [0-%d]: ", choice_max)
 		_, err := fmt.Scan(&choice)
 		if err != nil || choice > choice_max || choice < 0 {
@@ -57,34 +59,47 @@ func select_device() (*evdev.InputDevice, error) {
 	return nil, errors.New(errmsg)
 }
 
-
 func format_event(ev *evdev.InputEvent) string {
-	var res, f, codename string
+	var res, f, code_name string
 
-	if ev.Type == evdev.EV_SYN {
+	code := int(ev.Code)
+	etype := int(ev.Type)
+
+	switch ev.Type {
+	case evdev.EV_SYN:
 		if ev.Code == evdev.SYN_MT_REPORT {
 			f = "time %d.%-8d +++++++++ %s ++++++++"
 		} else {
 			f = "time %d.%-8d --------- %s --------"
 		}
-
-		res = fmt.Sprintf(f, ev.Time.Sec, ev.Time.Usec, evdev.SYN[int(ev.Code)])
-	} else {
-		m, present := evdev.ByEventType[int(ev.Type)]
-		if present {
-			codename = m[int(ev.Code)]
+		return fmt.Sprintf(f, ev.Time.Sec, ev.Time.Usec, evdev.SYN[code])
+	case evdev.EV_KEY:
+		val, haskey := evdev.KEY[code]
+		if haskey {
+			code_name = val
 		} else {
-			codename = "?"
+			val, haskey := evdev.BTN[code]
+			if haskey {
+				code_name = val
+			} else {
+				code_name = "?"
+			}
 		}
-
-		evfmt := "time %d.%-8d type %d (%s), code %-4d (%s), value %d"
-		res = fmt.Sprintf(evfmt, ev.Time.Sec, ev.Time.Usec, ev.Type,
-			evdev.EV[int(ev.Type)], ev.Code, codename, ev.Value)
+	default:
+		m, haskey := evdev.ByEventType[etype]
+		if haskey {
+			code_name = m[code]
+		} else {
+			code_name = "?"
+		}
 	}
+
+	evfmt := "time %d.%-8d type %d (%s), code %-3d (%s), value %d"
+	res = fmt.Sprintf(evfmt, ev.Time.Sec, ev.Time.Usec, etype,
+		evdev.EV[int(ev.Type)], ev.Code, code_name, ev.Value)
 
 	return res
 }
-
 
 func main() {
 	var dev *evdev.InputDevice
