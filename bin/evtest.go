@@ -12,50 +12,8 @@ import (
 
 const (
 	usage = "usage: evtest <device> [<type> <value>]"
-	eventfmt = "time %-16s type %s (%s), code %-4s (%s), value %s"
 	device_glob = "/dev/input/event*"
 )
-
-func main() {
-	var dev *evdev.InputDevice
-	var err error
-
-	if len(os.Args) == 1 {
-		dev, err = select_device()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	} else if len(os.Args) == 2 {
-		fmt.Printf("Selecting Device 2\n")
-	} else if len(os.Args) == 4 {
-		fmt.Printf("Selecting Device 4\n")
-	} else {
-		fmt.Printf(usage + "\n")
-	}
-
-	info := fmt.Sprintf("bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x",
-		dev.Bustype, dev.Vendor, dev.Product, dev.Version)
-
-	fmt.Printf("Device name: %s\n", dev.Name)
-	fmt.Printf("Device info: %s\n", info)
-	fmt.Printf("Repeat settings: \n")
-	fmt.Printf("Device capabilities: \n")
-
-	fmt.Printf("Listening for events ...\n")
-
-	for {
-		fmt.Printf("asdfasd\n")
-	}
-
-// print('Listening for events ...\n')
-// while True:
-//     r, w, e = select([device], [], [])
-// 
-//     for ev in device.read():
-//         print_event(ev)
-}
-
 
 // Select a device from a list of accessible input devices.
 func select_device() (*evdev.InputDevice, error) {
@@ -83,8 +41,15 @@ func select_device() (*evdev.InputDevice, error) {
 		fmt.Printf(strings.Join(lines, "\n")+"\n")
 
 		var choice int
-		fmt.Printf("Select device [0-%d]: ", len(lines)-1)
-		fmt.Scanf("%d", &choice)
+		choice_max := len(lines) - 1
+
+		ReadChoice:
+		fmt.Printf("Select device [0-%d]: ", choice_max)
+		_, err := fmt.Scan(&choice)
+		if err != nil || choice > choice_max || choice < 0 {
+			goto ReadChoice
+		}
+
 		return devices[choice], nil
 	}
 
@@ -94,20 +59,73 @@ func select_device() (*evdev.InputDevice, error) {
 
 
 func format_event(ev *evdev.InputEvent) string {
-	var res, f string
+	var res, f, codename string
+
 	if ev.Type == evdev.EV_SYN {
 		if ev.Code == evdev.SYN_MT_REPORT {
-			f = "time %-16s +++++++++ %s ++++++++"
+			f = "time %d.%-8d +++++++++ %s ++++++++"
 		} else {
-			f = "time %-16s --------- %s --------"
+			f = "time %d.%-8d --------- %s --------"
 		}
-		res = fmt.Sprintf(f, ev.Time, evdev.SYN[int(ev.Code)])
+
+		res = fmt.Sprintf(f, ev.Time.Sec, ev.Time.Usec, evdev.SYN[int(ev.Code)])
 	} else {
-		res = "asdfasd"
+		m, present := evdev.ByEventType[int(ev.Type)]
+		if present {
+			codename = m[int(ev.Code)]
+		} else {
+			codename = "?"
+		}
+
+		evfmt := "time %d.%-8d type %d (%s), code %-4d (%s), value %d"
+		res = fmt.Sprintf(evfmt, ev.Time.Sec, ev.Time.Usec, ev.Type,
+			evdev.EV[int(ev.Type)], ev.Code, codename, ev.Value)
 	}
 
 	return res
 }
+
+
+func main() {
+	var dev *evdev.InputDevice
+	var events []evdev.InputEvent
+	var err error
+
+	if len(os.Args) == 1 {
+		dev, err = select_device()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	} else if len(os.Args) == 2 {
+		fmt.Printf("Selecting Device 2\n")
+	} else if len(os.Args) == 4 {
+		fmt.Printf("Selecting Device 4\n")
+	} else {
+		fmt.Printf(usage + "\n")
+	}
+
+	info := fmt.Sprintf("bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x",
+		dev.Bustype, dev.Vendor, dev.Product, dev.Version)
+
+	fmt.Printf("Device name: %s\n", dev.Name)
+	fmt.Printf("Device info: %s\n", info)
+	fmt.Printf("Repeat settings: \n")
+	fmt.Printf("Device capabilities: \n")
+
+	fmt.Printf("Listening for events ...\n")
+
+	for {
+		events = dev.Read()
+		for i := range events {
+			str := format_event(&events[i])
+			fmt.Println(str)
+		}
+	}
+}
+
+
+
 // def print_event(e):
 //     if e.type == ecodes.EV_SYN:
 //         if e.code == ecodes.SYN_MT_REPORT:

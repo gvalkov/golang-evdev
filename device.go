@@ -112,7 +112,7 @@ func (dev *InputDevice) String() string {
 	       dev.Vendor, dev.Product, dev.Version, evtypes_s)
 }
 
-// Gets the event types and event codes that the input device supports
+// Gets the event types and event codes that the input device supports.
 func (dev *InputDevice) set_device_capabilities() error {
 	// Capabilities is a map of supported event types to lists of
 	// events e.g: {1: [272, 273, 274, 275], 2: [0, 1, 6, 8]}
@@ -150,7 +150,7 @@ func (dev *InputDevice) set_device_capabilities() error {
 }
 
 
-// An all-in-one function for describing an input device
+// An all-in-one function for describing an input device.
 func (dev *InputDevice) set_device_info() error {
 	info := device_info{}
 
@@ -207,7 +207,7 @@ type AbsInfo struct {
 	resolution int32
 }
 
-// Corresponds to the input_id struct
+// Corresponds to the input_id struct.
 type device_info struct {
 	bustype, vendor, product, version uint16
 }
@@ -223,6 +223,7 @@ func keys (cap *map[int][]int) []int {
 	return slice
 }
 
+// Determine if a path exist and is a character input device.
 func IsInputDevice(path string) bool {
 	fi, err := os.Stat(path)
 
@@ -238,7 +239,7 @@ func IsInputDevice(path string) bool {
 	return true
 }
 
-// Return a list of accessible input devices matched by deviceglob
+// Return a list of accessible input devices matched by deviceglob.
 func ListInputDevices(deviceglob string) ([]string, error) {
 	paths, err := filepath.Glob(deviceglob)
 
