@@ -34,10 +34,13 @@ type InputDevice struct {
 	Product uint16   // product identifier
 	Version uint16   // version identifier
 
+	EvdevVersion int // evdev protocol version
+
 	Capabilities     map[CapabilityType][]CapabilityCode  // supported event types and codes.
 	CapabilitiesFlat map[int][]int
 }
 
+// Open an evdev input device.
 func Open(devnode string) (*InputDevice, error) {
 	f, err := os.Open(devnode)
 	if err != nil {
@@ -166,9 +169,6 @@ func (dev *InputDevice) set_device_info() error {
 	// it's ok if the topology info is not available
 	ioctl(dev.File.Fd(), uintptr(EVIOCGPHYS), unsafe.Pointer(phys))
 
-	// dev.Name = string(name[:bytes.IndexByte(name[:], 0)])
-	// dev.Phys = string(phys[:bytes.IndexByte(phys[:], 0)])
-
 	dev.Name = bytes_to_string(name)
 	dev.Phys = bytes_to_string(phys)
 
@@ -177,15 +177,29 @@ func (dev *InputDevice) set_device_info() error {
 	dev.Product = info.product
 	dev.Version = info.version
 
+	ev_version := new(int)
+	ioctl(dev.File.Fd(), uintptr(EVIOCGVERSION), unsafe.Pointer(ev_version))
+	dev.EvdevVersion = *ev_version
+
 	return nil
 }
 
+// Get repeat rate as a two element array.
+//   [0] repeat rate in characters per second
+//   [1] amount of time that a key must be depressed before it will start
+//       to repeat (in milliseconds)
 func (dev *InputDevice) GetRepeatRate() *[2]uint {
 	repeat_delay := new([2]uint)
-
-	ioctl(dev.File.Fd(), uintptr(EVIOCGREP), unsafe.Pointer(&repeat_delay))
+	ioctl(dev.File.Fd(), uintptr(EVIOCGREP), unsafe.Pointer(repeat_delay))
 
 	return repeat_delay
+}
+
+// Set repeat rate and delay.
+func (dev *InputDevice) SetRepeatRate(repeat, delay uint) {
+	repeat_delay := new([2]uint)
+	repeat_delay[0], repeat_delay[1] = repeat, delay
+	ioctl(dev.File.Fd(), uintptr(EVIOCSREP), unsafe.Pointer(repeat_delay))
 }
 
 type CapabilityType struct {
@@ -256,7 +270,6 @@ func ListInputDevices(deviceglob string) ([]string, error) {
 
 	return devices, nil
 }
-
 
 func bytes_to_string(b *[MAX_NAME_SIZE]byte) (string) {
 	idx := bytes.IndexByte(b[:], 0)

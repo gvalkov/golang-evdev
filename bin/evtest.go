@@ -106,27 +106,41 @@ func main() {
 	var events []evdev.InputEvent
 	var err error
 
-	if len(os.Args) == 1 {
+	switch len(os.Args) {
+	case 1:
 		dev, err = select_device()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-	} else if len(os.Args) == 2 {
-		fmt.Printf("Selecting Device 2\n")
-	} else if len(os.Args) == 4 {
-		fmt.Printf("Selecting Device 4\n")
-	} else {
+	case 2:
+		dev, err = evdev.Open(os.Args[1])
+		if err != nil {
+			fmt.Printf("unable to open input device: %s\n", os.Args[1])
+			os.Exit(1)
+		}
+	default:
 		fmt.Printf(usage + "\n")
+		os.Exit(1)
 	}
 
 	info := fmt.Sprintf("bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x",
 		dev.Bustype, dev.Vendor, dev.Product, dev.Version)
 
+	repeat_info := dev.GetRepeatRate()
+
+	fmt.Printf("Evdev protocol version: %d\n", dev.EvdevVersion)
 	fmt.Printf("Device name: %s\n", dev.Name)
 	fmt.Printf("Device info: %s\n", info)
-	fmt.Printf("Repeat settings: \n")
-	fmt.Printf("Device capabilities: \n")
+	fmt.Printf("Repeat settings: repeat %d. delay %d\n", repeat_info[0], repeat_info[1])
+	fmt.Printf("Device capabilities:\n")
+
+	// for ctype, codes := range dev.Capabilities {
+	// 	fmt.Printf("  Type %s %d\n", ctype.Name, ctype.Type)
+	// 	for i := range codes {
+	// 		fmt.Printf("   Code %d %s\n", codes[i].Code, codes[i].Name)
+	// 	}
+	// }
 
 	fmt.Printf("Listening for events ...\n")
 
@@ -140,26 +154,6 @@ func main() {
 }
 
 
-
-// def print_event(e):
-//     if e.type == ecodes.EV_SYN:
-//         if e.code == ecodes.SYN_MT_REPORT:
-//             print('time {:<16} +++++++++ {} ++++++++'.format(e.timestamp(), ecodes.SYN[e.code]))
-//         else:
-//             print('time {:<16} --------- {} --------'.format(e.timestamp(), ecodes.SYN[e.code]))
-//     else:
-//         if e.type in ecodes.bytype:
-//             codename = ecodes.bytype[e.type][e.code]
-//         else:
-//             codename = '?'
-// 
-//         print(evfmt.format(e.timestamp(), e.type, ecodes.EV[e.type], e.code, codename, e.value))
-// 
-// 
-// print('Device name: {.name}'.format(device))
-// print('Device info: {.info}'.format(device))
-// print('Repeat settings: {}'.format(device.repeat))
-// 
 // print('Device capabilities:')
 // for type, codes in device.capabilities(verbose=True).items():
 //     print('  Type {} {}:'.format(*type))
