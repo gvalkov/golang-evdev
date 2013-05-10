@@ -58,14 +58,20 @@ func Open(devnode string) (*InputDevice, error) {
 }
 
 // Read and return a slice of input events from device.
-func (dev *InputDevice) Read() []InputEvent {
+func (dev *InputDevice) Read() ([]InputEvent, error) {
 	events := make([]InputEvent, 16)
 	buffer := make([]byte, eventsize*16)
 
-	dev.File.Read(buffer)
+	_, err := dev.File.Read(buffer)
+	if err != nil {
+		return events, err
+	}
 
 	b := bytes.NewBuffer(buffer)
-	binary.Read(b, binary.LittleEndian, &events)
+	err = binary.Read(b, binary.LittleEndian, &events)
+	if err != nil {
+		return events, err
+	}
 
 	// remove trailing structures
 	for i := range events {
@@ -79,14 +85,20 @@ func (dev *InputDevice) Read() []InputEvent {
 }
 
 // Read and return a single input event.
-func (dev *InputDevice) ReadOne() *InputEvent {
+func (dev *InputDevice) ReadOne() (*InputEvent, error) {
 	event := InputEvent{}
 	buffer := make([]byte, eventsize)
 
-	dev.File.Read(buffer)
+	_, err := dev.File.Read(buffer)
+	if err != nil {
+		return &event, err
+	}
 
 	b := bytes.NewBuffer(buffer)
-	binary.Read(b, binary.LittleEndian, &event)
+	err = binary.Read(b, binary.LittleEndian, &event)
+	if err != nil {
+		return &event, err
+	}
 
 	return &event
 }
