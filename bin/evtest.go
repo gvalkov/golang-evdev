@@ -145,7 +145,7 @@ func main() {
 	fmt.Printf("Listening for events ...\n")
 
 	for {
-		events = dev.Read()
+		events, err = dev.Read()
 		for i := range events {
 			str := format_event(&events[i])
 			fmt.Println(str)

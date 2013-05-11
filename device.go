@@ -81,7 +81,7 @@ func (dev *InputDevice) Read() ([]InputEvent, error) {
 		}
 	}
 
-	return events
+	return events, err
 }
 
 // Read and return a single input event.
@@ -100,7 +100,7 @@ func (dev *InputDevice) ReadOne() (*InputEvent, error) {
 		return &event, err
 	}
 
-	return &event
+	return &event, err
 }
 
 // Get a useful description for an input device. Example:
