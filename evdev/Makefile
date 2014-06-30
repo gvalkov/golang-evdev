@@ -1,6 +1,6 @@
 all: install
 
-ecodes.go: ecodes.tmpl.go
+ecodes.go: ecodes.go.tmpl
 	./ecodes.sh /usr/include/linux/input.h $< > $@
 
 install: ecodes.go

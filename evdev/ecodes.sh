@@ -5,7 +5,7 @@
 
 
 header=${1:-/usr/include/linux/input.h}
-tmpl=${2:-./ecodes.tmpl}
+tmpl=${2:-./ecodes.go.tmpl}
 [[ ! -e $header ]] && echo "no such file: $header" && exit 1
 
 function codes () {
