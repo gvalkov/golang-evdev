@@ -17,15 +17,7 @@ const (
 
 // Select a device from a list of accessible input devices.
 func select_device() (*evdev.InputDevice, error) {
-	fns, _ := evdev.ListInputDevices(device_glob)
-	devices := make([]*evdev.InputDevice, 0)
-
-	for i := range fns {
-		dev, err := evdev.Open(fns[i])
-		if err == nil {
-			devices = append(devices, dev)
-		}
-	}
+	devices, _ := evdev.ListInputDevices(device_glob)
 
 	lines := make([]string, 0)
 	max := 0

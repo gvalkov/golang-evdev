@@ -269,15 +269,10 @@ func IsInputDevice(path string) bool {
 	return true
 }
 
-// Return a list of accessible input devices matched by deviceglob
-// (default '/dev/input/event*').
-func ListInputDevices(deviceglob_arg ...string) ([]string, error) {
-	deviceglob := "/dev/input/event*"
-	if len(deviceglob_arg) > 0 {
-		deviceglob := deviceglob_arg[0]
-	}
-
-	paths, err := filepath.Glob(deviceglob)
+// Return a list of accessible input device names matched by
+// deviceglob (default '/dev/input/event*').
+func ListInputDevicePaths(device_glob string) ([]string, error) {
+	paths, err := filepath.Glob(device_glob)
 
 	if err != nil {
 		return nil, err
@@ -287,6 +282,27 @@ func ListInputDevices(deviceglob_arg ...string) ([]string, error) {
 	for _, path := range paths {
 		if IsInputDevice(path) {
 			devices = append(devices, path)
+		}
+	}
+
+	return devices, nil
+}
+
+// Return a list of accessible input devices matched by deviceglob
+// (default '/dev/input/event/*').
+func ListInputDevices(device_glob_arg ...string) ([]*InputDevice, error) {
+	device_glob := "/dev/input/event*"
+	if len(device_glob_arg) > 0 {
+		device_glob = device_glob_arg[0]
+	}
+
+	fns, _ := ListInputDevicePaths(device_glob)
+	devices := make([]*InputDevice, 0)
+
+	for i := range fns {
+		dev, err := Open(fns[i])
+		if err == nil {
+			devices = append(devices, dev)
 		}
 	}
 
