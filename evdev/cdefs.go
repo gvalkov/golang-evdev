@@ -34,38 +34,38 @@ const (
 const MAX_NAME_SIZE = 256
 
 const (
-	EVIOCGID = C.EVIOCGID                  // get device ID
-	EVIOCGVERSION = C.EVIOCGVERSION        // get driver version
-	EVIOCGREP = C.EVIOCGREP                // get repeat settings
-	EVIOCSREP = C.EVIOCSREP                // set repeat settings
+	EVIOCGID      = C.EVIOCGID      // get device ID
+	EVIOCGVERSION = C.EVIOCGVERSION // get driver version
+	EVIOCGREP     = C.EVIOCGREP     // get repeat settings
+	EVIOCSREP     = C.EVIOCSREP     // set repeat settings
 
-	EVIOCGKEYCODE    = C.EVIOCGKEYCODE     // get keycode
-	EVIOCGKEYCODE_V2 = C.EVIOCGKEYCODE_V2  // get keycode
+	EVIOCGKEYCODE    = C.EVIOCGKEYCODE    // get keycode
+	EVIOCGKEYCODE_V2 = C.EVIOCGKEYCODE_V2 // get keycode
 
-	EVIOCSKEYCODE    = C.EVIOCSKEYCODE     // set keycode
-	EVIOCSKEYCODE_V2 = C.EVIOCSKEYCODE_V2  // set keycode
+	EVIOCSKEYCODE    = C.EVIOCSKEYCODE    // set keycode
+	EVIOCSKEYCODE_V2 = C.EVIOCSKEYCODE_V2 // set keycode
 
-	EVIOCSFF      = C.EVIOCSFF             // send a force effect to a force feedback device
-	EVIOCRMFF     = C.EVIOCRMFF            // erase a force effect
-	EVIOCGEFFECTS = C.EVIOCGEFFECTS        // report number of effects playable at the same time
+	EVIOCSFF      = C.EVIOCSFF      // send a force effect to a force feedback device
+	EVIOCRMFF     = C.EVIOCRMFF     // erase a force effect
+	EVIOCGEFFECTS = C.EVIOCGEFFECTS // report number of effects playable at the same time
 
-    EVIOCGRAB     = C.EVIOCGRAB            // grab/release device
-	EVIOCSCLOCKID = C.EVIOCSCLOCKID        // set clockid to be used for timestamps
+	EVIOCGRAB     = C.EVIOCGRAB     // grab/release device
+	EVIOCSCLOCKID = C.EVIOCSCLOCKID // set clockid to be used for timestamps
 )
 
-var	EVIOCGNAME = C._EVIOCGNAME(MAX_NAME_SIZE)  // get device name
-var	EVIOCGPHYS = C._EVIOCGPHYS(MAX_NAME_SIZE)  // get physical location
-var	EVIOCGUNIQ = C._EVIOCGUNIQ(MAX_NAME_SIZE)  // get unique identifier
-var	EVIOCGPROP = C._EVIOCGPROP(MAX_NAME_SIZE)  // get device properties
+var EVIOCGNAME = C._EVIOCGNAME(MAX_NAME_SIZE) // get device name
+var EVIOCGPHYS = C._EVIOCGPHYS(MAX_NAME_SIZE) // get physical location
+var EVIOCGUNIQ = C._EVIOCGUNIQ(MAX_NAME_SIZE) // get unique identifier
+var EVIOCGPROP = C._EVIOCGPROP(MAX_NAME_SIZE) // get device properties
 
-var EVIOCGKEY = C._EVIOCGKEY(MAX_NAME_SIZE)  // get global key state
-var EVIOCGLED = C._EVIOCGLED(MAX_NAME_SIZE)  // get all LEDs
-var EVIOCGSND = C._EVIOCGSND(MAX_NAME_SIZE)  // get all sounds status
-var EVIOCGSW  = C._EVIOCGSW(MAX_NAME_SIZE)   // get all switch states
+var EVIOCGKEY = C._EVIOCGKEY(MAX_NAME_SIZE) // get global key state
+var EVIOCGLED = C._EVIOCGLED(MAX_NAME_SIZE) // get all LEDs
+var EVIOCGSND = C._EVIOCGSND(MAX_NAME_SIZE) // get all sounds status
+var EVIOCGSW  = C._EVIOCGSW(MAX_NAME_SIZE)  // get all switch states
 
-func EVIOCGBIT(ev, l int) int { return int(C._EVIOCGBIT(C.int(ev), C.int(l))) }  // get event bits
-func EVIOCGABS(abs int) int   { return int(C._EVIOCGABS(C.int(abs))) }           // get abs bits
-func EVIOCSABS(abs int) int   { return int(C._EVIOCSABS(C.int(abs))) }           // set abs bits
+func EVIOCGBIT(ev, l int) int { return int(C._EVIOCGBIT(C.int(ev), C.int(l))) } // get event bits
+func EVIOCGABS(abs int) int   { return int(C._EVIOCGABS(C.int(abs))) }          // get abs bits
+func EVIOCSABS(abs int) int   { return int(C._EVIOCSABS(C.int(abs))) }          // set abs bits
 
 func ioctl(fd uintptr, name uintptr, data unsafe.Pointer) syscall.Errno {
 	_, _, err := syscall.RawSyscall(syscall.SYS_IOCTL, fd, name, uintptr(data))

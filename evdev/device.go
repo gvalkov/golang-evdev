@@ -1,14 +1,5 @@
 // +build linux
 
-// This package provides Go language bindings to the Linux input event
-// system. The evdev interface serves the purpose of passing events
-// generated in the kernel directly to userspace through character
-// devices thata are typically located in /dev/input/.
-//
-// This package also comes with bindings to uinput, the userspace
-// input subsystem. Uinput allows userspace programs to create and
-// handle input devices from input events can be directly injected
-// into the input subsystem.
 package evdev
 
 import (
@@ -23,20 +14,20 @@ import (
 
 // A Linux input device from which events can be read.
 type InputDevice struct {
-	Fn   string      // path to input device (devnode)
+	Fn string // path to input device (devnode)
 
-	Name string      // device name
-	Phys string      // physical topology of device
-	File *os.File    // an open file handle to the input device
+	Name string   // device name
+	Phys string   // physical topology of device
+	File *os.File // an open file handle to the input device
 
-	Bustype uint16   // bus type identifier
-	Vendor  uint16   // vendor identifier
-	Product uint16   // product identifier
-	Version uint16   // version identifier
+	Bustype uint16 // bus type identifier
+	Vendor  uint16 // vendor identifier
+	Product uint16 // product identifier
+	Version uint16 // version identifier
 
 	EvdevVersion int // evdev protocol version
 
-	Capabilities     map[CapabilityType][]CapabilityCode  // supported event types and codes.
+	Capabilities     map[CapabilityType][]CapabilityCode // supported event types and codes.
 	CapabilitiesFlat map[int][]int
 }
 
@@ -118,11 +109,11 @@ func (dev *InputDevice) String() string {
 	evtypes_s := strings.Join(evtypes, ", ")
 
 	return fmt.Sprintf(
-		"InputDevice %s (fd %d)\n" +
-		"  name %s\n" +
-		"  phys %s\n" +
-		"  bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x\n" +
-		"  events %s",
+		"InputDevice %s (fd %d)\n"+
+			"  name %s\n"+
+			"  phys %s\n"+
+			"  bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x\n"+
+			"  events %s",
 		dev.Fn, dev.File.Fd(), dev.Name, dev.Phys, dev.Bustype,
 		dev.Vendor, dev.Product, dev.Version, evtypes_s)
 }
@@ -134,27 +125,29 @@ func (dev *InputDevice) set_device_capabilities() error {
 	// capabilities := make(map[int][]int)
 	capabilities := make(map[CapabilityType][]CapabilityCode)
 
-	evbits   := new([ (EV_MAX+1)/8]byte)
-	codebits := new([(KEY_MAX+1)/8]byte)
+	evbits := new([(EV_MAX + 1) / 8]byte)
+	codebits := new([(KEY_MAX + 1) / 8]byte)
 	// absbits  := new([6]byte)
 
 	err := ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(0, EV_MAX)), unsafe.Pointer(evbits))
-	if err != 0 {return err}
+	if err != 0 {
+		return err
+	}
 
-    // Build a map of the device's capabilities
+	// Build a map of the device's capabilities
 	for evtype := 0; evtype < EV_MAX; evtype++ {
-		if evbits[evtype/8] & (1 << uint(evtype % 8)) != 0 {
+		if evbits[evtype/8]&(1<<uint(evtype%8)) != 0 {
 			eventcodes := make([]CapabilityCode, 0)
 
 			ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(evtype, KEY_MAX)), unsafe.Pointer(codebits))
 			for evcode := 0; evcode < KEY_MAX; evcode++ {
-				if codebits[evcode/8] & (1 << uint(evcode % 8)) != 0 {
+				if codebits[evcode/8]&(1<<uint(evcode%8)) != 0 {
 					c := CapabilityCode{evcode, ByEventType[evtype][evcode]}
 					eventcodes = append(eventcodes, c)
 				}
 			}
 
-            // capabilities[EV_KEY] = [KEY_A, KEY_B, KEY_C, ...]
+			// capabilities[EV_KEY] = [KEY_A, KEY_B, KEY_C, ...]
 			key := CapabilityType{evtype, EV[evtype]}
 			capabilities[key] = eventcodes
 		}
@@ -163,7 +156,6 @@ func (dev *InputDevice) set_device_capabilities() error {
 	dev.Capabilities = capabilities
 	return nil
 }
-
 
 // An all-in-one function for describing an input device.
 func (dev *InputDevice) set_device_info() error {
@@ -188,7 +180,7 @@ func (dev *InputDevice) set_device_info() error {
 	dev.Name = bytes_to_string(name)
 	dev.Phys = bytes_to_string(phys)
 
-	dev.Vendor  = info.vendor
+	dev.Vendor = info.vendor
 	dev.Bustype = info.bustype
 	dev.Product = info.product
 	dev.Version = info.version

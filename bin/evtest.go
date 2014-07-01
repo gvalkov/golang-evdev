@@ -1,11 +1,11 @@
 // +build linux
-// evdev example - input device event monitor
+// evdev package example - input device event monitor
 package main
 
 import (
 	"errors"
-	"evdev"
 	"fmt"
+	"github.com/gvalkov/golang-evdev/evdev"
 	"os"
 	"strings"
 )
@@ -47,7 +47,7 @@ func select_device() (*evdev.InputDevice, error) {
 		return devices[choice], nil
 	}
 
-	errmsg := fmt.Sprintf("no accessible input devices matched by %s", device_glob)
+	errmsg := fmt.Sprintf("no accessible input devices found by %s", device_glob)
 	return nil, errors.New(errmsg)
 }
 
@@ -145,7 +145,6 @@ func main() {
 	}
 }
 
-
 // print('Device capabilities:')
 // for type, codes in device.capabilities(verbose=True).items():
 //     print('  Type {} {}:'.format(*type))
@@ -156,5 +155,5 @@ func main() {
 //         else:
 //             print('    Code {:<4} {}'.format(*i))
 //     print('')
-// 
-// 
+//
+//
