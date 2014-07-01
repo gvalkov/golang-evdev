@@ -269,8 +269,14 @@ func IsInputDevice(path string) bool {
 	return true
 }
 
-// Return a list of accessible input devices matched by deviceglob.
-func ListInputDevices(deviceglob string) ([]string, error) {
+// Return a list of accessible input devices matched by deviceglob
+// (default '/dev/input/event*').
+func ListInputDevices(deviceglob_arg ...string) ([]string, error) {
+	deviceglob := "/dev/input/event*"
+	if len(deviceglob_arg) > 0 {
+		deviceglob := deviceglob_arg[0]
+	}
+
 	paths, err := filepath.Glob(deviceglob)
 
 	if err != nil {
