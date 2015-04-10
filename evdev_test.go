@@ -1,6 +1,6 @@
 package evdev
-import "testing"
 
+import "testing"
 
 func TestAccess(t *testing.T) {
 	if KEY_A != ecodes["KEY_A"] {

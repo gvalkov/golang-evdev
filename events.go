@@ -1,31 +1,31 @@
 package evdev
 
 import (
-	"unsafe"
 	"fmt"
 	"syscall"
+	"unsafe"
 )
 
 type InputEvent struct {
-	Time syscall.Timeval  // time in seconds since epoch at which event occurred
-	Type  uint16  // event type - one of ecodes.EV_*
-	Code  uint16  // event code related to the event type
-	Value int32   // event value related to the event type
+	Time  syscall.Timeval // time in seconds since epoch at which event occurred
+	Type  uint16          // event type - one of ecodes.EV_*
+	Code  uint16          // event code related to the event type
+	Value int32           // event value related to the event type
 }
 
 // Get a useful description for an input event. Example:
 //   event at 1347905437.435795, code 01, type 02, val 02
 func (ev *InputEvent) String() string {
 	return fmt.Sprintf("event at %d.%d, code %02d, type %02d, val %02d",
-		   ev.Time.Sec, ev.Time.Usec, ev.Code, ev.Type, ev.Value)
+		ev.Time.Sec, ev.Time.Usec, ev.Code, ev.Type, ev.Value)
 }
 
 var eventsize = int(unsafe.Sizeof(InputEvent{}))
 
-
 type KeyEventState uint8
+
 const (
-	KeyUp KeyEventState = 0x0
+	KeyUp   KeyEventState = 0x0
 	KeyDown KeyEventState = 0x1
 	KeyHold KeyEventState = 0x2
 )
@@ -33,10 +33,10 @@ const (
 // KeyEvents are used to describe state changes of keyboards, buttons,
 // or other key-like devices.
 type KeyEvent struct {
-	Event *InputEvent
+	Event    *InputEvent
 	Scancode uint16
 	Keycode  uint16
-	State KeyEventState
+	State    KeyEventState
 }
 
 func (kev *KeyEvent) New(ev *InputEvent) {
@@ -45,14 +45,18 @@ func (kev *KeyEvent) New(ev *InputEvent) {
 	kev.Scancode = ev.Code
 
 	switch ev.Value {
-	case 0: kev.State = KeyUp
-	case 2: kev.State = KeyHold
-	case 1: kev.State = KeyDown
+	case 0:
+		kev.State = KeyUp
+	case 2:
+		kev.State = KeyHold
+	case 1:
+		kev.State = KeyDown
 	}
 }
 
 func NewKeyEvent(ev *InputEvent) *KeyEvent {
-	kev := &KeyEvent{} ; kev.New(ev)
+	kev := &KeyEvent{}
+	kev.New(ev)
 	return kev
 }
 
@@ -60,16 +64,18 @@ func (ev *KeyEvent) String() string {
 	state := "unknown"
 
 	switch ev.State {
-	case KeyUp: state = "up"
-	case KeyHold: state = "hold"
-	case KeyDown: state = "down"
+	case KeyUp:
+		state = "up"
+	case KeyHold:
+		state = "hold"
+	case KeyDown:
+		state = "down"
 	}
 
 	return fmt.Sprintf("key event at %d.%d, %d (%d), ()",
-		               ev.Event.Time.Sec, ev.Event.Time.Usec,
-		               ev.Scancode, ev.Event.Code, state)
+		ev.Event.Time.Sec, ev.Event.Time.Usec,
+		ev.Scancode, ev.Event.Code, state)
 }
-
 
 // RelEvents are used to describe relative axis value changes,
 // e.g. moving the mouse 5 units to the left.
@@ -82,14 +88,15 @@ func (rev *RelEvent) New(ev *InputEvent) {
 }
 
 func NewRelEvent(ev *InputEvent) *RelEvent {
-	rev := &RelEvent{} ; rev.New(ev)
+	rev := &RelEvent{}
+	rev.New(ev)
 	return rev
 }
 
 func (ev *RelEvent) String() string {
 	return fmt.Sprintf("relative axis event at %d.%d, %s",
-	    ev.Event.Time.Sec, ev.Event.Time.Usec,
-	    REL[int(ev.Event.Code)])
+		ev.Event.Time.Sec, ev.Event.Time.Usec,
+		REL[int(ev.Event.Code)])
 }
 
 // TODO: Make this work

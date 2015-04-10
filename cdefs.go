@@ -20,10 +20,10 @@ import "C"
 import "syscall"
 import "unsafe"
 
-type _InputEvent        C.struct_input_event
-type _InputAbsinfo      C.struct_input_absinfo
-type _InputId           C.struct_input_id
-type _InputKeymapEntry  C.struct_input_keymap_entry
+type _InputEvent C.struct_input_event
+type _InputAbsinfo C.struct_input_absinfo
+type _InputId C.struct_input_id
+type _InputKeymapEntry C.struct_input_keymap_entry
 
 const (
 	sizeofInputAbsinfo     = C.sizeof_struct_input_absinfo
@@ -61,7 +61,7 @@ var EVIOCGPROP = C._EVIOCGPROP(MAX_NAME_SIZE) // get device properties
 var EVIOCGKEY = C._EVIOCGKEY(MAX_NAME_SIZE) // get global key state
 var EVIOCGLED = C._EVIOCGLED(MAX_NAME_SIZE) // get all LEDs
 var EVIOCGSND = C._EVIOCGSND(MAX_NAME_SIZE) // get all sounds status
-var EVIOCGSW  = C._EVIOCGSW(MAX_NAME_SIZE)  // get all switch states
+var EVIOCGSW = C._EVIOCGSW(MAX_NAME_SIZE)   // get all switch states
 
 func EVIOCGBIT(ev, l int) int { return int(C._EVIOCGBIT(C.int(ev), C.int(l))) } // get event bits
 func EVIOCGABS(abs int) int   { return int(C._EVIOCGABS(C.int(abs))) }          // get abs bits
