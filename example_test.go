@@ -9,6 +9,14 @@ func ExampleOpen() {
 	device := Open("/dev/input/event3")
 }
 
+// Listing accessible input devices.
+func ExampleListInputdevices() {
+	devices, err := evdev.ListInputDevices()
+	for _, dev := range devices {
+		fmt.Printf("%s %s %s", dev.Fn, dev.Name, dev.Phys)
+	}
+}
+
 func Example() {
 	device := Open("/dev/input/event3")
 
