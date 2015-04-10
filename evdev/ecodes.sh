@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Generate a go source file that exports macros from
 # /usr/include/linux/input.h
@@ -6,9 +6,13 @@
 
 header=${1:-/usr/include/linux/input.h}
 tmpl=${2:-./ecodes.go.tmpl}
-[[ ! -e $header ]] && echo "no such file: $header" && exit 1
 
-function codes () {
+if [ ! -e $header ]; then
+  echo "no such file: $header"
+  exit 1
+fi
+
+codes () {
     awk '
     /#define +(KEY|ABS|REL|SW|MSC|LED|BTN|REP|SND|ID|EV|BUS|SYN)_/ {
         print $2, "=", $3;
