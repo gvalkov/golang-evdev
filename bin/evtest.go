@@ -1,11 +1,11 @@
 // +build linux
-// evdev package example - input device event monitor
+// Input device event monitor.
 package main
 
 import (
 	"errors"
 	"fmt"
-	"github.com/gvalkov/golang-evdev/evdev"
+	"github.com/gvalkov/golang-evdev"
 	"os"
 	"strings"
 )
