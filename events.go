@@ -72,7 +72,7 @@ func (ev *KeyEvent) String() string {
 		state = "down"
 	}
 
-	return fmt.Sprintf("key event at %d.%d, %d (%d), ()",
+	return fmt.Sprintf("key event at %d.%d, %d (%d), (%s)",
 		ev.Event.Time.Sec, ev.Event.Time.Usec,
 		ev.Scancode, ev.Event.Code, state)
 }
