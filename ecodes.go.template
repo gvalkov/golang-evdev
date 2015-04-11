@@ -1,5 +1,5 @@
+// -*- mode: go; -*-
 // +build ignore
-// -*- mode: go -*-
 
 // Integer constants defined in linux/input.h can be accessed
 // directly or through the provided reverse and forward mappings:
@@ -25,8 +25,6 @@ var ecodes = map[string] int {
 %(codemap)s
 }
 
-
-// TODO figure out how to write on one line
 
 var KEY = map[int] string {}
 var ABS = map[int] string {}

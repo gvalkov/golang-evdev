@@ -1,13 +1,5 @@
-all: install
+all: ecodes.go
 
-ecodes.go: ecodes.go.tmpl
-	./ecodes.sh /usr/include/linux/input.h $< > $@
-
-install: ecodes.go
-	go install .
-
-test: ecodes.go
-	go test .
-
-getioctl: getioctl.c
-	gcc $< -o $@
+ecodes.go: ecodes.go.template
+	./bin/generate-ecodes.sh /usr/include/linux/input.h $< > $@
+.PHONY: ecodes.go
