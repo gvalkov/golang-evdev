@@ -1,24 +1,26 @@
 package evdev_test
 
 import (
+	. "evdev"
 	"fmt"
-	"github.com/gvalkov/golang-evdev"
 )
 
 func ExampleOpen() {
-	device := Open("/dev/input/event3")
+	device, _ := Open("/dev/input/event3")
+	fmt.Println(device)
 }
 
 // Listing accessible input devices.
-func ExampleListInputdevices() {
-	devices, err := evdev.ListInputDevices()
+func ExampleListInputDevices() {
+	devices, _ := evdev.ListInputDevices()
+
 	for _, dev := range devices {
 		fmt.Printf("%s %s %s", dev.Fn, dev.Name, dev.Phys)
 	}
 }
 
 func Example() {
-	device := Open("/dev/input/event3")
+	device, _ := Open("/dev/input/event3")
 
 	fmt.Println(device)
 	// InputDevice /dev/input/event3 (fd 3)
@@ -38,5 +40,4 @@ func Example() {
 	//      0:[0 1 2 4]
 	//      2:[0 1 6 8 272 273 274 275 276 277 278 279]
 	//      1:[272 273 274 275 276 277 278 279] ]
-
 }
