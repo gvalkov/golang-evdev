@@ -1,5 +1,9 @@
 all: ecodes.go
 
+HEADERS  = /usr/include/linux/input.h
+HEADERS += /usr/include/linux/input-event-codes.h
+
 ecodes.go: ecodes.go.template
-	./bin/generate-ecodes.sh /usr/include/linux/input.h $< > $@
+	./bin/genecodes.py $(HEADERS) $< > $@
+
 .PHONY: ecodes.go
