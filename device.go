@@ -210,6 +210,25 @@ func (dev *InputDevice) SetRepeatRate(repeat, delay uint) {
 	ioctl(dev.File.Fd(), uintptr(EVIOCSREP), unsafe.Pointer(repeat_delay))
 }
 
+// Grab the input device exclusively.
+func (dev *InputDevice) Grab() error {
+	grab := int(1)
+	if err := ioctl(dev.File.Fd(), uintptr(EVIOCGRAB), unsafe.Pointer(&grab)); err != 0 {
+		return err
+	}
+
+	return nil
+}
+
+// Release a grabbed input device.
+func (dev *InputDevice) Release() error {
+	if err := ioctl(dev.File.Fd(), uintptr(EVIOCGRAB), unsafe.Pointer(nil)); err != 0 {
+		return err
+	}
+
+	return nil
+}
+
 type CapabilityType struct {
 	Type int
 	Name string
