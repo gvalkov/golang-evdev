@@ -48,6 +48,32 @@ func Open(devnode string) (*InputDevice, error) {
 	return &dev, nil
 }
 
+// Enable exclusive listening of the device. This is useful if you want to
+// capture all events from a device, like a macro pad, keyboard, or gaming
+// mouse.
+func (dev *InputDevice) Grab() error {
+
+	var v int = 1
+	err := ioctl(dev.File.Fd(), uintptr(EVIOCGRAB), unsafe.Pointer(&v))
+	if err != 0 {
+		return err
+	}
+
+	return nil
+}
+
+// Disable exclusive listening of the device.
+func (dev *InputDevice) UnGrab() error {
+
+	var v int = 0
+	err := ioctl(dev.File.Fd(), uintptr(EVIOCGRAB), unsafe.Pointer(&v))
+	if err != 0 {
+		return err
+	}
+
+	return nil
+}
+
 // Read and return a slice of input events from device.
 func (dev *InputDevice) Read() ([]InputEvent, error) {
 	events := make([]InputEvent, 16)
