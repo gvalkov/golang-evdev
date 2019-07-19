@@ -42,8 +42,14 @@ func Open(devnode string) (*InputDevice, error) {
 	dev.Fn = devnode
 	dev.File = f
 
-	dev.set_device_info()
-	dev.set_device_capabilities()
+	err = dev.set_device_info()
+	if err != nil {
+		return nil, err
+	}
+	err = dev.set_device_capabilities()
+	if err != nil {
+		return nil, err
+	}
 
 	return &dev, nil
 }
@@ -139,7 +145,10 @@ func (dev *InputDevice) set_device_capabilities() error {
 		if evbits[evtype/8]&(1<<uint(evtype%8)) != 0 {
 			eventcodes := make([]CapabilityCode, 0)
 
-			ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(evtype, KEY_MAX)), unsafe.Pointer(codebits))
+			err = ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(evtype, KEY_MAX)), unsafe.Pointer(codebits))
+			if err != 0 {
+				return err
+			}
 			for evcode := 0; evcode < KEY_MAX; evcode++ {
 				if codebits[evcode/8]&(1<<uint(evcode%8)) != 0 {
 					c := CapabilityCode{evcode, ByEventType[evtype][evcode]}
@@ -169,7 +178,7 @@ func (dev *InputDevice) set_device_info() error {
 		return err
 	}
 
-	ioctl(dev.File.Fd(), uintptr(EVIOCGNAME), unsafe.Pointer(name))
+	err = ioctl(dev.File.Fd(), uintptr(EVIOCGNAME), unsafe.Pointer(name))
 	if err != 0 {
 		return err
 	}
@@ -186,7 +195,10 @@ func (dev *InputDevice) set_device_info() error {
 	dev.Version = info.version
 
 	ev_version := new(int)
-	ioctl(dev.File.Fd(), uintptr(EVIOCGVERSION), unsafe.Pointer(ev_version))
+	err = ioctl(dev.File.Fd(), uintptr(EVIOCGVERSION), unsafe.Pointer(ev_version))
+	if err != 0 {
+		return err
+	}
 	dev.EvdevVersion = *ev_version
 
 	return nil
