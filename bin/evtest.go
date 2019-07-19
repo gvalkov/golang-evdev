@@ -5,9 +5,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/gvalkov/golang-evdev"
 	"os"
 	"strings"
+
+	evdev "github.com/gvalkov/golang-evdev"
 )
 
 const (
