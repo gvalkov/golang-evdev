@@ -138,6 +138,10 @@ func main() {
 
 	for {
 		events, err = dev.Read()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		for i := range events {
 			str := format_event(&events[i])
 			fmt.Println(str)
