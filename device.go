@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,12 +43,14 @@ func Open(devnode string) (*InputDevice, error) {
 	dev.Fn = devnode
 	dev.File = f
 
-	err = dev.set_device_info()
+	err = dev.setDeviceInfo()
 	if err != nil {
+		log.Printf("setDeviceInfo error: %v", err)
 		return nil, err
 	}
-	err = dev.set_device_capabilities()
+	err = dev.setDeviceCapabilities()
 	if err != nil {
+		log.Printf("setDeviceCapabilities error: %v", err)
 		return nil, err
 	}
 
@@ -61,12 +64,14 @@ func (dev *InputDevice) Read() ([]InputEvent, error) {
 
 	_, err := dev.File.Read(buffer)
 	if err != nil {
+		log.Printf("Read().dev.File.Read error: %v", err)
 		return events, err
 	}
 
 	b := bytes.NewBuffer(buffer)
 	err = binary.Read(b, binary.LittleEndian, &events)
 	if err != nil {
+		log.Printf("Read().binary.Read error: %v", err)
 		return events, err
 	}
 
@@ -88,12 +93,14 @@ func (dev *InputDevice) ReadOne() (*InputEvent, error) {
 
 	_, err := dev.File.Read(buffer)
 	if err != nil {
+		log.Printf("ReadOne().dev.File.Read error: %v", err)
 		return &event, err
 	}
 
 	b := bytes.NewBuffer(buffer)
 	err = binary.Read(b, binary.LittleEndian, &event)
 	if err != nil {
+		log.Printf("ReadOne().binary.Read error: %v", err)
 		return &event, err
 	}
 
@@ -125,7 +132,7 @@ func (dev *InputDevice) String() string {
 }
 
 // Gets the event types and event codes that the input device supports.
-func (dev *InputDevice) set_device_capabilities() error {
+func (dev *InputDevice) setDeviceCapabilities() error {
 	// Capabilities is a map of supported event types to lists of
 	// events e.g: {1: [272, 273, 274, 275], 2: [0, 1, 6, 8]}
 	// capabilities := make(map[int][]int)
@@ -137,6 +144,7 @@ func (dev *InputDevice) set_device_capabilities() error {
 
 	err := ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(0, EV_MAX)), unsafe.Pointer(evbits))
 	if err != 0 {
+		log.Printf("setDeviceCapabilities().ioctl(EVIOCGBIT(0, EV_MAX)) error: %v", err)
 		return err
 	}
 
@@ -147,7 +155,9 @@ func (dev *InputDevice) set_device_capabilities() error {
 
 			err = ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(evtype, KEY_MAX)), unsafe.Pointer(codebits))
 			if err != 0 {
-				return err
+				log.Printf("setDeviceCapabilities().ioctl(EVIOCGBIT(evtype, KEY_MAX)) evtype=%v error: %v", evtype, err)
+				//return err
+				continue
 			}
 			for evcode := 0; evcode < KEY_MAX; evcode++ {
 				if codebits[evcode/8]&(1<<uint(evcode%8)) != 0 {
@@ -167,7 +177,7 @@ func (dev *InputDevice) set_device_capabilities() error {
 }
 
 // An all-in-one function for describing an input device.
-func (dev *InputDevice) set_device_info() error {
+func (dev *InputDevice) setDeviceInfo() error {
 	info := device_info{}
 
 	name := new([MAX_NAME_SIZE]byte)
@@ -175,31 +185,37 @@ func (dev *InputDevice) set_device_info() error {
 
 	err := ioctl(dev.File.Fd(), uintptr(EVIOCGID), unsafe.Pointer(&info))
 	if err != 0 {
+		log.Printf("setDeviceInfo().ioctl(EVIOCGID) error: %v", err)
 		return err
 	}
 
 	err = ioctl(dev.File.Fd(), uintptr(EVIOCGNAME), unsafe.Pointer(name))
 	if err != 0 {
+		log.Printf("setDeviceInfo().ioctl(EVIOCGNAME) error: %v", err)
 		return err
 	}
 
 	// it's ok if the topology info is not available
-	ioctl(dev.File.Fd(), uintptr(EVIOCGPHYS), unsafe.Pointer(phys))
+	err = ioctl(dev.File.Fd(), uintptr(EVIOCGPHYS), unsafe.Pointer(phys))
+	if err != 0 {
+		log.Printf("setDeviceInfo().ioctl(EVIOCGPHYS) error: %v", err)
+	}
 
-	dev.Name = bytes_to_string(name)
-	dev.Phys = bytes_to_string(phys)
+	dev.Name = bytesToString(name)
+	dev.Phys = bytesToString(phys)
 
 	dev.Vendor = info.vendor
 	dev.Bustype = info.bustype
 	dev.Product = info.product
 	dev.Version = info.version
 
-	ev_version := new(int)
-	err = ioctl(dev.File.Fd(), uintptr(EVIOCGVERSION), unsafe.Pointer(ev_version))
+	evVersion := new(int)
+	err = ioctl(dev.File.Fd(), uintptr(EVIOCGVERSION), unsafe.Pointer(evVersion))
 	if err != 0 {
+		log.Printf("setDeviceInfo().ioctl(EVIOCGVERSION) error: %v", err)
 		return err
 	}
-	dev.EvdevVersion = *ev_version
+	dev.EvdevVersion = *evVersion
 
 	return nil
 }
@@ -210,8 +226,10 @@ func (dev *InputDevice) set_device_info() error {
 //       to repeat (in milliseconds)
 func (dev *InputDevice) GetRepeatRate() *[2]uint {
 	repeat_delay := new([2]uint)
-	ioctl(dev.File.Fd(), uintptr(EVIOCGREP), unsafe.Pointer(repeat_delay))
-
+	err := ioctl(dev.File.Fd(), uintptr(EVIOCGREP), unsafe.Pointer(repeat_delay))
+	if err != 0 {
+		log.Printf("GetRepeatRate().ioctl error: %v", err)
+	}
 	return repeat_delay
 }
 
@@ -219,13 +237,17 @@ func (dev *InputDevice) GetRepeatRate() *[2]uint {
 func (dev *InputDevice) SetRepeatRate(repeat, delay uint) {
 	repeat_delay := new([2]uint)
 	repeat_delay[0], repeat_delay[1] = repeat, delay
-	ioctl(dev.File.Fd(), uintptr(EVIOCSREP), unsafe.Pointer(repeat_delay))
+	err := ioctl(dev.File.Fd(), uintptr(EVIOCSREP), unsafe.Pointer(repeat_delay))
+	if err != 0 {
+		log.Printf("SetRepeatRate().ioctl error: %v", err)
+	}
 }
 
 // Grab the input device exclusively.
 func (dev *InputDevice) Grab() error {
 	grab := int(1)
 	if err := ioctl(dev.File.Fd(), uintptr(EVIOCGRAB), unsafe.Pointer(&grab)); err != 0 {
+		log.Printf("Grab().ioctl error: %v", err)
 		return err
 	}
 
@@ -235,6 +257,7 @@ func (dev *InputDevice) Grab() error {
 // Release a grabbed input device.
 func (dev *InputDevice) Release() error {
 	if err := ioctl(dev.File.Fd(), uintptr(EVIOCGRAB), unsafe.Pointer(nil)); err != 0 {
+		log.Printf("Release().ioctl error: %v", err)
 		return err
 	}
 
@@ -332,7 +355,7 @@ func ListInputDevices(device_glob_arg ...string) ([]*InputDevice, error) {
 	return devices, nil
 }
 
-func bytes_to_string(b *[MAX_NAME_SIZE]byte) string {
+func bytesToString(b *[MAX_NAME_SIZE]byte) string {
 	idx := bytes.IndexByte(b[:], 0)
 	return string(b[:idx])
 }
