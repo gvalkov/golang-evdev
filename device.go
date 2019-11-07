@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"unsafe"
 )
 
@@ -147,8 +148,14 @@ func (dev *InputDevice) set_device_capabilities() error {
 
 			err = ioctl(dev.File.Fd(), uintptr(EVIOCGBIT(evtype, KEY_MAX)), unsafe.Pointer(codebits))
 			if err != 0 {
+				// ignore invalid capabilities such as EV_REP for some devices
+				if err == syscall.EINVAL {
+					continue
+				}
+
 				return err
 			}
+
 			for evcode := 0; evcode < KEY_MAX; evcode++ {
 				if codebits[evcode/8]&(1<<uint(evcode%8)) != 0 {
 					c := CapabilityCode{evcode, ByEventType[evtype][evcode]}
