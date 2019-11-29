@@ -1,8 +1,9 @@
 package evdev_test
 
 import (
-	. "evdev"
 	"fmt"
+
+	evdev "github.com/gvalkov/golang-evdev"
 )
 
 func ExampleOpen() {
