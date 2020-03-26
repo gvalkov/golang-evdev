@@ -131,7 +131,13 @@ func main() {
 	// for ctype, codes := range dev.Capabilities {
 	// 	fmt.Printf("  Type %s %d\n", ctype.Name, ctype.Type)
 	// 	for i := range codes {
-	// 		fmt.Printf("   Code %d %s\n", codes[i].Code, codes[i].Name)
+	// 		element := evdev.InputElement{ctype.Type, codes[i].Code}
+	// 		state, ok := dev.InitState[element]
+	// 		stateString := ""
+	// 		if ok {
+	// 			stateString = fmt.Sprintf("[init state %d]", state)
+	// 		}
+	// 		fmt.Printf("   Code %d %s %s\n", codes[i].Code, codes[i].Name, stateString)
 	// 	}
 	// }
 
