@@ -58,10 +58,10 @@ var EVIOCGPHYS = C._EVIOCGPHYS(MAX_NAME_SIZE) // get physical location
 var EVIOCGUNIQ = C._EVIOCGUNIQ(MAX_NAME_SIZE) // get unique identifier
 var EVIOCGPROP = C._EVIOCGPROP(MAX_NAME_SIZE) // get device properties
 
-var EVIOCGKEY = C._EVIOCGKEY(MAX_NAME_SIZE) // get global key state
-var EVIOCGLED = C._EVIOCGLED(MAX_NAME_SIZE) // get all LEDs
-var EVIOCGSND = C._EVIOCGSND(MAX_NAME_SIZE) // get all sounds status
-var EVIOCGSW = C._EVIOCGSW(MAX_NAME_SIZE)   // get all switch states
+func EVIOCGKEY(l int) int { return int(C._EVIOCGSW(C.int(l))) }  // get global key state
+func EVIOCGLED(l int) int { return int(C._EVIOCGLED(C.int(l))) } // get all LEDs
+func EVIOCGSND(l int) int { return int(C._EVIOCGSND(C.int(l))) } // get all sounds status
+func EVIOCGSW(l int) int  { return int(C._EVIOCGSW(C.int(l))) }  // get all switch states
 
 func EVIOCGBIT(ev, l int) int { return int(C._EVIOCGBIT(C.int(ev), C.int(l))) } // get event bits
 func EVIOCGABS(abs int) int   { return int(C._EVIOCGABS(C.int(abs))) }          // get abs bits
