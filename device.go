@@ -30,6 +30,8 @@ type InputDevice struct {
 
 	Capabilities     map[CapabilityType][]CapabilityCode // supported event types and codes.
 	CapabilitiesFlat map[int][]int
+
+	InitState map[InputElement]int32
 }
 
 // Open an evdev input device.
@@ -131,6 +133,7 @@ func (dev *InputDevice) set_device_capabilities() error {
 	// events e.g: {1: [272, 273, 274, 275], 2: [0, 1, 6, 8]}
 	// capabilities := make(map[int][]int)
 	capabilities := make(map[CapabilityType][]CapabilityCode)
+	dev.InitState = make(map[InputElement]int32)
 
 	evbits := new([(EV_MAX + 1) / 8]byte)
 	codebits := new([(KEY_MAX + 1) / 8]byte)
@@ -156,10 +159,67 @@ func (dev *InputDevice) set_device_capabilities() error {
 				return err
 			}
 
+			state := []byte{}
+
+			switch evtype {
+			case EV_KEY:
+				buf := new([(KEY_MAX + 1) * 8]byte)
+				err = ioctl(dev.File.Fd(), uintptr(EVIOCGKEY(len(buf))), unsafe.Pointer(buf))
+				if err >= 0 {
+					state = buf[:]
+				}
+			case EV_SW:
+				buf := new([(SW_MAX + 1) * 8]byte)
+				err = ioctl(dev.File.Fd(), uintptr(EVIOCGSW(len(buf))), unsafe.Pointer(buf))
+				if err >= 0 {
+					state = buf[:]
+				}
+			case EV_LED:
+				buf := new([(LED_MAX + 1) * 8]byte)
+				err = ioctl(dev.File.Fd(), uintptr(EVIOCGLED(len(buf))), unsafe.Pointer(buf))
+				if err >= 0 {
+					state = buf[:]
+				}
+			case EV_SND:
+				buf := new([(SND_MAX + 1) * 8]byte)
+				err = ioctl(dev.File.Fd(), uintptr(EVIOCGLED(len(buf))), unsafe.Pointer(buf))
+				if err >= 0 {
+					state = buf[:]
+				}
+			}
+
 			for evcode := 0; evcode < KEY_MAX; evcode++ {
 				if codebits[evcode/8]&(1<<uint(evcode%8)) != 0 {
 					c := CapabilityCode{evcode, ByEventType[evtype][evcode]}
 					eventcodes = append(eventcodes, c)
+
+					stateKey := InputElement{evtype, evcode}
+
+					switch evtype {
+					case EV_KEY:
+						fallthrough
+					case EV_SW:
+						fallthrough
+					case EV_LED:
+						fallthrough
+					case EV_SND:
+						if evcode < len(state)*8 {
+							val := int32(0)
+
+							if state[evcode/8]&(1<<uint(evcode%8)) != 0 {
+								val = 1
+							}
+
+							dev.InitState[stateKey] = val
+						}
+
+					case EV_ABS:
+						info := new(AbsInfo)
+						err = ioctl(dev.File.Fd(), uintptr(EVIOCGABS(evcode)), unsafe.Pointer(info))
+						if err == 0 {
+							dev.InitState[stateKey] = info.value
+						}
+					}
 				}
 			}
 
@@ -256,6 +316,11 @@ type CapabilityType struct {
 type CapabilityCode struct {
 	Code int
 	Name string
+}
+
+type InputElement struct {
+	Type int
+	Code int
 }
 
 type AbsInfo struct {
