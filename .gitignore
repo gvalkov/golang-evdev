@@ -4,3 +4,4 @@
 *.py[co]
 getioctl
 _obj
+/.devcontainer
