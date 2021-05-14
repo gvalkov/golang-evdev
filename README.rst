@@ -20,6 +20,7 @@ the keycode which is problematic. It works if you assume a particular
 layout (maybe). The change is similar to some code in evdev-python.
 
 One of two things needs to happen:
+
 * The keycode is looked up in the keymap. I have no idea how to do
   this.
 * Keymap is stored as an array of possible codes requiring a compare
