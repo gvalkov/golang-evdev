@@ -19,6 +19,7 @@ type InputDevice struct {
 
 	Name string   // device name
 	Phys string   // physical topology of device
+	Ident string  // unique identifier
 	File *os.File // an open file handle to the input device
 
 	Bustype uint16 // bus type identifier
@@ -119,6 +120,7 @@ func (dev *InputDevice) String() string {
 		"InputDevice %s (fd %d)\n"+
 			"  name %s\n"+
 			"  phys %s\n"+
+			"  ident %s\n"+
 			"  bus 0x%04x, vendor 0x%04x, product 0x%04x, version 0x%04x\n"+
 			"  events %s",
 		dev.Fn, dev.File.Fd(), dev.Name, dev.Phys, dev.Bustype,
@@ -179,6 +181,7 @@ func (dev *InputDevice) set_device_info() error {
 
 	name := new([MAX_NAME_SIZE]byte)
 	phys := new([MAX_NAME_SIZE]byte)
+	ident := new([MAX_NAME_SIZE]byte)
 
 	err := ioctl(dev.File.Fd(), uintptr(EVIOCGID), unsafe.Pointer(&info))
 	if err != 0 {
@@ -193,8 +196,12 @@ func (dev *InputDevice) set_device_info() error {
 	// it's ok if the topology info is not available
 	ioctl(dev.File.Fd(), uintptr(EVIOCGPHYS), unsafe.Pointer(phys))
 
+	// it's ok if the unique identifier is not available
+	ioctl(dev.File.Fd(), uintptr(EVIOCGUNIQ), unsafe.Pointer(ident))
+
 	dev.Name = bytes_to_string(name)
 	dev.Phys = bytes_to_string(phys)
+	dev.Ident = bytes_to_string(ident)
 
 	dev.Vendor = info.vendor
 	dev.Bustype = info.bustype
