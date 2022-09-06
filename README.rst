@@ -20,3 +20,20 @@ Documentation:
 
 Development:
     https://github.com/gvalkov/golang-evdev
+
+*Fork Notes:*
+-------------
+
+The only changes between this and the original project (thus far) is 
+the keycode which is problematic. It works if you assume a particular
+layout (maybe). The change is similar to some code in evdev-python.
+
+One of two things needs to happen:
+
+* The keycode is looked up in the keymap. I have no idea how to do
+  this.
+* Keymap is stored as an array of possible codes requiring a compare
+  function. This is problematic in that any scancode can 
+  theorhetically produce any keycode depending on layout and really
+  this just then becomes about the meaningful probability of a key
+  presenting a particular character/keycode.

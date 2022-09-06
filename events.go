@@ -35,14 +35,14 @@ const (
 type KeyEvent struct {
 	Event    *InputEvent
 	Scancode uint16
-	Keycode  uint16
+	Keycode  string
 	State    KeyEventState
 }
 
 func (kev *KeyEvent) New(ev *InputEvent) {
 	kev.Event = ev
-	kev.Keycode = 0 // :todo
 	kev.Scancode = ev.Code
+	kev.Keycode = KEY[int(ev.Code)]
 
 	switch ev.Value {
 	case 0:
